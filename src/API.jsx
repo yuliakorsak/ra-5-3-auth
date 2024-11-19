@@ -1,11 +1,9 @@
 export function auth(authData) {
-  const response = sendRequest('POST', '/auth', authData, null)
-  return response;
+  return sendRequest('POST', '/auth', authData, null);
 }
 
 export function getProfile(token) {
-  const response = sendRequest('GET', '/private/me', null, token);
-  return response;
+  return sendRequest('GET', '/private/me', null, token);
 }
 
 export function getNews(token, id = null) {
@@ -17,32 +15,37 @@ export function getNews(token, id = null) {
 }
 
 function sendRequest(method, url, data, token) {
+  const options = {
+    method: method,
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }
+  if (token !== null) {
+    options.headers['Authorization'] = `Bearer ${token}`;
+  }
+  if (data !== null) {
+    options.body = data;
+  }
+
   return new Promise((resolve) => {
-    const xhr = new XMLHttpRequest();
-    xhr.responseType = 'json';
-    xhr.onload = () => {
-      if (xhr.status === 200) {
-        resolve(xhr.response);
-      }
-      else if (xhr.response && xhr.response.message) {
-        alert(xhr.response.message);
-        location.href = '/';
-      }
-      else {
-        if (xhr.status === 401) {
-          Local.remove();
+    fetch(`http://localhost:7070${url}`, options)
+      .then(response => {
+        if (response.ok) {
+          resolve(response.json());
         }
-        location.href = '/';
-      }
-    };
-    xhr.open(method, `http://localhost:7070${url}`);
-    if (token !== null) {
-      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
-      xhr.send('Authorization', `Bearer ${token}`);
-    }
-    else {
-      xhr.send(data);
-    }
+        else if (response.status === 401) {
+          Local.remove();
+          location.href = '/';
+        }
+        else {
+          response.json().then(json => {
+            alert(json.message);
+            location.href = '/';
+          }
+          );
+        }
+      });
   });
 }
 
